@@ -43,6 +43,9 @@ sub create_server {
     $builder->signal_handler(
         $component_factory->create_signal_handler($config));
 
+    $builder->attribute_codec_store(
+        $component_factory->create_attribute_codec_store($config));
+
     return $builder->build();
 }
 

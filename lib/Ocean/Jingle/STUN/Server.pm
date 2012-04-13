@@ -15,7 +15,6 @@ use Ocean::Jingle::STUN::MethodType;
 use Ocean::Jingle::STUN::TCPConnection;
 use Ocean::Jingle::STUN::TransportType;
 
-
 use Ocean::Jingle::STUN::Attribute::XORMappedAddress;
 use Ocean::Jingle::STUN::Attribute::UnknownAttributes;
 use Ocean::Jingle::STUN::Attribute::ErrorCode;
@@ -206,11 +205,10 @@ sub on_message {
         port     => $port,
     });
 
-    infof('<Server> <Transport:%s:%s:%d> @message', $proto, $host, $port);
-
     my $msg = Ocean::Jingle::STUN::MessageReader->new(
         attribute_codec_store => $self->{_attribute_codec_store}
     )->read($bytes);
+
     unless ($msg) {
         infof('<Server> <Transport:%s:%s:%d> @bad_message', 
             $proto, $host, $port);
@@ -242,75 +240,51 @@ sub on_message {
             $host, $port, $msg->class);
     }
 
-    #return unless ($msg->class  eq Ocean::Jingle::STUN::ClassType::REQUEST
-    #            && $msg->method eq Ocean::Jingle::STUN::MethodType::BINDING);
-
-    #my $builder = Ocean::Jingle::STUN::MessageBuilder->new(
-    #    class          => Ocean::Jingle::STUN::ClassType::RESPONSE_SUCCESS, 
-    #    method         => $msg->method, 
-    #    transaction_id => $msg->transaction_id,
-    #);
-
-    #my $attr = Ocean::Jingle::STUN::Attribute::XORMappedAddress->new;
-    #$attr->set(address => $host);
-    #$attr->set(port    => $port);
-    #$attr->set(family  => Ocean::Jingle::STUN::AddressFamilyType::IPV4);
-    #$builder->add_attribute($attr);
-
-    #my $res = $builder->build();
-    #unless ($res) {
-    #    warnf('<Server> failed to build message');
-    #    return;
-    #}
-
-    #infof('<Server> @response, { message: %s }', 
-    #    unpack('H*', $res));
-
-    #$self->{_udp_transport}->send($host, $port, $res);
 }
 
 sub on_request_message {
-    my ($self, $sender, $msg) = @_;
+    my ($self, $entity, $msg) = @_;
+
     # authenticate
     # sign message
+
+    return unless ($msg->class  eq Ocean::Jingle::STUN::ClassType::REQUEST
+                && $msg->method eq Ocean::Jingle::STUN::MethodType::BINDING);
+
+    my $builder = Ocean::Jingle::STUN::MessageBuilder->new(
+        class                 => Ocean::Jingle::STUN::ClassType::RESPONSE_SUCCESS, 
+        method                => $msg->method, 
+        transaction_id        => $msg->transaction_id,
+        attribute_codec_store => $self->{_attribute_codec_store},
+    );
+
+    my $attr = Ocean::Jingle::STUN::Attribute::XORMappedAddress->new;
+    $attr->set(address => $entity->host);
+    $attr->set(port    => $entity->port);
+    $attr->set(family  => Ocean::Jingle::STUN::AddressFamilyType::IPV4);
+    $builder->add_attribute($attr);
+
+    my $res = $builder->build();
+    unless ($res) {
+        warnf('<Server> failed to build message');
+        return;
+    }
+
+    debugf('<Server> @response, { message: %s }', 
+        unpack('H*', $res));
+
+    $self->deliver_message($entity, $builder->build());
 }
 
 sub on_indication_message {
     my ($self, $sender, $msg) = @_;
+    # not supported on simple STUN server.
 }
 
 sub on_connection_received_message {
     my ($self, $host, $port, $bytes) = @_;
-
     $self->on_message(Ocean::Jingle::STUN::TransportType::TCP, 
         $host, $port, $bytes);
-
-    #return unless ($msg->class  eq Ocean::Jingle::STUN::ClassType::REQUEST
-    #            && $msg->method eq Ocean::Jingle::STUN::MethodType::BINDING);
-
-    #my $builder = Ocean::Jingle::STUN::MessageBuilder->new(
-    #    class          => Ocean::Jingle::STUN::ClassType::RESPONSE_SUCCESS, 
-    #    method         => $msg->method, 
-    #    transaction_id => $msg->transaction_id,
-    #);
-
-    #my $attr = Ocean::Jingle::STUN::Attribute::XORMappedAddress->new;
-    #$attr->set(address => $host);
-    #$attr->set(port    => $port);
-    #$attr->set(family  => Ocean::Jingle::STUN::AddressFamilyType::IPV4);
-    #$builder->add_attribute($attr);
-
-    #my $res = $builder->build();
-    #unless ($res) {
-    #    warnf('<Server> failed to build message');
-    #    return;
-    #}
-
-    #infof('<Server> @response, { message: %s }', 
-    #    unpack('H*', $res));
-
-    #$self->{_tcp_connection_manager}->deliver_message($host, $port, $res);
-
 }
 
 sub deliver_unknown_attributes_error {

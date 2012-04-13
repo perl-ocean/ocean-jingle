@@ -12,7 +12,7 @@ use Ocean::CommonComponent::SignalHandler::AESignal;
 use Ocean::Jingle::STUN::ServerComponent::TCPListener::AESocket::Default;
 use Ocean::Jingle::STUN::ServerComponent::TCPListener::AESocket::TLS;
 use Ocean::Jingle::STUN::ServerComponent::TCPListener::Null;
-use Ocean::Jingle::STUN::ServerComponent::UDPTransport::AEHUDP;
+#use Ocean::Jingle::STUN::ServerComponent::UDPTransport::AEHUDP;
 use Ocean::Jingle::STUN::TCPConnectionManager;
 use Ocean::Jingle::STUN::AttributeCodecStoreFactory::STUN;
 
@@ -96,11 +96,11 @@ sub create_tcp_tls_listener {
 
 sub create_udp_transport {
     my ($self, $config) = @_;
-    return Ocean::Jingle::STUN::ServerComponent::UDPTransport::AEHUDP->new(
-        host         => $config->get(server => q{host}),
-        port         => $config->get(server => q{port}),
-        receive_size => $config->get(server => q{receive_size}),
-    );
+    #return Ocean::Jingle::STUN::ServerComponent::UDPTransport::AEHUDP->new(
+    #    host         => $config->get(server => q{host}),
+    #    port         => $config->get(server => q{port}),
+    #    receive_size => $config->get(server => q{receive_size}),
+    #);
 }
 
 sub create_tcp_connection_manager {
